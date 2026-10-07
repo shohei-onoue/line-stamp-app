@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LINEスタンプ生成</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@800;900&family=Dela+Gothic+One&family=Yusei+Magic&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>LINEスタンプ生成</h1>
+    <nav class="steps" id="steps">
+      <button data-step="1">1 アバター</button>
+      <button data-step="2">2 シチュエーション</button>
+      <button data-step="3">3 タッチ</button>
+      <button data-step="4">4-6 一覧・チェック・編集</button>
+      <button data-step="5">7 保存</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 1 アバター作成 -->
+    <section class="pane" data-pane="1">
+      <div class="split">
+        <div class="card">
+          <h2>パーツを選ぶ</h2>
+          <div id="avatar-form" class="form-grid"></div>
+          <button id="randomize" class="ghost">おまかせ（ランダム）</button>
+        </div>
+        <div class="card center">
+          <h2>イメージ</h2>
+          <canvas id="avatar-preview" class="checker preview-lg"></canvas>
+        </div>
+      </div>
+      <div class="next"><button class="primary" data-goto="2">次へ：シチュエーション</button></div>
+    </section>
+
+    <!-- 2 シチュエーション -->
+    <section class="pane" data-pane="2">
+      <div class="card">
+        <h2>スタンプの文言（1行＝1枚、40行）</h2>
+        <p class="hint">「/」で改行。文言から表情・ポーズ・装飾を自動で割り当てます（4-6で個別に変更可）。</p>
+        <textarea id="situations" rows="20" spellcheck="false"></textarea>
+        <div class="row"><span id="situation-count" class="hint"></span>
+          <button id="fill-sample" class="ghost">サンプル40個を入れる</button></div>
+      </div>
+      <div class="next"><button class="primary" data-goto="3">次へ：タッチ</button></div>
+    </section>
+
+    <!-- 3 タッチ -->
+    <section class="pane" data-pane="3">
+      <div class="card">
+        <h2>イラストのタッチ</h2>
+        <div id="style-list" class="style-list"></div>
+      </div>
+      <div class="card">
+        <h2>描画方法</h2>
+        <div class="seg">
+          <label><input type="radio" name="engine" value="program"> プログラム描画（無料・オフライン）</label>
+          <label><input type="radio" name="engine" value="ai"> AI生成（OpenAI・有料）</label>
+        </div>
+        <div id="ai-panel" class="ai-panel" hidden>
+          <div class="form-grid">
+            <label>OpenAI APIキー <input type="password" id="ai-key" autocomplete="off" placeholder="sk-..."></label>
+            <label>モデル <select data-ai="model"></select></label>
+            <label>品質 <select data-ai="quality"></select></label>
+            <label class="check"><input type="checkbox" id="ai-remember"> この端末にキーを保存</label>
+          </div>
+          <p class="hint">キーは api.openai.com への送信にのみ使い、保存はこのブラウザ内だけです。料金はOpenAIから生成1回ごとに請求されます（キャラクター化1回＋スタンプ40回）。上のタッチと①のパーツがプロンプトに使われます。</p>
+          <div class="form-grid">
+            <label>参考画像（任意）<input type="file" id="ai-ref" accept="image/*"></label>
+            <label>参考画像の使い方 <select data-ai="refMode"></select></label>
+          </div>
+          <div class="row ref-row" id="ai-ref-row" hidden>
+            <img id="ai-ref-img" class="checker ai-base" alt="参考画像">
+            <button id="ai-ref-clear" class="ghost">参考画像を外す</button>
+          </div>
+          <p class="hint">目指す絵柄のイラストを参考画像に入れると、その仕上がりに寄せて描きます。品質は「高」がおすすめです。</p>
+          <div class="row"><button id="ai-base" class="primary">AIでキャラクター化</button><span id="ai-base-status" class="hint"></span></div>
+          <img id="ai-base-img" class="checker ai-base" alt="AIで作ったキャラクター" hidden>
+        </div>
+      </div>
+      <div class="card">
+        <h2>文字</h2>
+        <div class="form-grid">
+          <label>フォント
+            <select data-text="font">
+              <option value='"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif'>まるゴシック</option>
+              <option value='"Dela Gothic One", "Hiragino Sans", sans-serif'>極太ゴシック</option>
+              <option value='"Yusei Magic", "Hiragino Maru Gothic ProN", sans-serif'>手書き風</option>
+            </select>
+          </label>
+          <label>位置 <select data-text="textPos"><option value="bottom">下</option><option value="top">上</option></select></label>
+          <label>文字色 <input type="color" data-text="textColor"></label>
+          <label>縁取り <input type="color" data-text="outlineColor"></label>
+          <label>外枠 <input type="color" data-text="lineColor"></label>
+        </div>
+      </div>
+      <div class="next"><button class="primary" data-goto="4">次へ：一覧を生成</button></div>
+    </section>
+
+    <!-- 4-6 一覧・チェック・編集 -->
+    <section class="pane" data-pane="4">
+      <div class="toolbar">
+        <button id="regenerate" class="ghost">一覧を再生成</button>
+        <button id="download-sheet" class="ghost">一覧画像をPNG保存</button>
+        <button id="ai-generate" class="primary" hidden>AIで未生成分を作成</button>
+        <button id="ai-stop" class="ghost" hidden>中止</button>
+        <span id="ai-progress" class="hint"></span>
+        <span class="hint">画像をクリックすると、その1枚を編集できます。</span>
+      </div>
+      <div class="sheet-layout">
+        <div class="sheet-wrap">
+          <canvas id="sheet" class="checker"></canvas>
+          <div id="sheet-grid" class="sheet-grid" aria-hidden="true"></div>
+        </div>
+        <aside id="editor" class="card editor" hidden>
+          <h2>No.<span id="edit-no"></span> を編集</h2>
+          <canvas id="edit-preview" class="checker"></canvas>
+          <label>文言（改行可）<textarea id="edit-text" rows="2"></textarea></label>
+          <label>表情 <select id="edit-expr"></select></label>
+          <label>ポーズ <select id="edit-pose"></select></label>
+          <label>装飾 <select id="edit-deco"></select></label>
+          <label>画像で差し替え（任意）<input type="file" id="edit-image" accept="image/*"></label>
+          <div id="edit-ai" class="edit-ai" hidden>
+            <label>AIへの追加指示（任意）<input id="edit-ai-extra" placeholder="例: 両手でハートを作る"></label>
+            <button id="edit-ai-regen" class="ghost">この1枚をAIで再生成</button>
+            <span id="edit-ai-status" class="hint"></span>
+          </div>
+          <div class="row">
+            <button id="edit-auto" class="ghost">自動割当に戻す</button>
+            <button id="edit-close" class="ghost">閉じる</button>
+          </div>
+        </aside>
+      </div>
+      <div class="next"><button class="primary" data-goto="5">OK：保存へ</button></div>
+    </section>
+
+    <!-- 7 保存 -->
+    <section class="pane" data-pane="5">
+      <div class="card">
+        <h2>メイン画像・タブ画像</h2>
+        <div class="icons">
+          <figure><canvas id="main-preview" class="checker"></canvas><figcaption>main 240×240</figcaption></figure>
+          <figure><canvas id="tab-preview" class="checker"></canvas><figcaption>tab 96×74</figcaption></figure>
+        </div>
+        <div class="form-grid">
+          <label>main に使う <select id="main-index"></select></label>
+          <label>tab に使う <select id="tab-index"></select></label>
+        </div>
+      </div>
+      <div class="card">
+        <h2>40枚に切り分けてZIP保存</h2>
+        <p class="hint">01.png〜40.png（370×320）＋ main.png ＋ tab.png。LINEスタンプメーカーへはZIPを展開した画像を1枚ずつ取り込みます。</p>
+        <button id="export" class="primary">ZIPをダウンロード</button>
+        <pre id="log" class="log"></pre>
+      </div>
+      <button id="reset" class="ghost danger">すべて初期状態に戻す</button>
+    </section>
+  </main>
+
+  <script src="js/config.js"></script>
+  <script src="js/draw.js"></script>
+  <script src="js/avatar.js"></script>
+  <script src="js/decor.js"></script>
+  <script src="js/renderer.js"></script>
+  <script src="js/sheet.js"></script>
+  <script src="js/zip.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
